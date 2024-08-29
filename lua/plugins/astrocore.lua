@@ -22,6 +22,22 @@ return {
       virtual_text = true,
       underline = true,
     },
+    autocmds = {
+      fix_imports_on_save = {
+        cond = function(client) return client.name == "vtsls" end,
+        {
+          event = "BufWritePre",
+          desc = "Fix imports on save",
+          callback = function()
+            vim.lsp.buf.code_action {
+              context = { diagnostics = {}, only = { "source.organizeImports" } },
+              apply = true,
+            }
+          end,
+        },
+      },
+    },
+
     -- vim options can be configured here
     options = {
       opt = { -- vim.opt.<key>
