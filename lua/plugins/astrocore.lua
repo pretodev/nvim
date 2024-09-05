@@ -1,27 +1,6 @@
 -- AstroCore provides a central place to modify mappings, vim options, autocommands, and more!
 -- Configuration documentation can be found with `:h astrocore`
 
-local recent_buffers = {}
-
-local function update_recent_buffers()
-  local current_buffer = vim.api.nvim_get_current_buf()
-
-  for i, buf in ipairs(recent_buffers) do
-    if buf == current_buffer then
-      table.remove(recent_buffers, i)
-      break
-    end
-  end
-  table.insert(recent_buffers, 1, current_buffer)
-  if #recent_buffers > 2 then table.remove(recent_buffers, 3) end
-end
-
-local function switch_to_recent_buffer()
-  if #recent_buffers < 2 then return end
-  local target_buffer = recent_buffers[2]
-  if vim.api.nvim_buf_is_valid(target_buffer) then vim.api.nvim_set_current_buf(target_buffer) end
-end
-
 ---@type LazySpec
 return {
   "AstroNvim/astrocore",
@@ -86,9 +65,6 @@ return {
         -- show oppened buffers
         ["<Leader>o"] = { function() vim.cmd "Neotree focus buffers" end, desc = "Oppened buffers" },
 
-        -- prev tab
-        ["<Leader><Tab>"] = { switch_to_recent_buffer, desc = "Previous buffer" },
-
         -- tables with just a `desc` key will be registered with which-key if it's installed
         -- this is useful for naming menus
         -- ["<Leader>b"] = { desc = "Buffers" },
@@ -107,14 +83,6 @@ return {
         ["K"] = { ":m '<-2<CR>gv=gv", desc = "move selected content to top" },
       },
     },
-    autocmds = {
-      updaterecentbuffers = {
-        {
-          event = "BufEnter",
-          group = "updaterecentbuffers",
-          callback = update_recent_buffers,
-        },
-      },
-    },
+    autocmds = {},
   },
 }
