@@ -1,7 +1,26 @@
 -- AstroCore provides a central place to modify mappings, vim options, autocommands, and more!
 -- Configuration documentation can be found with `:h astrocore`
--- NOTE: We highly recommend setting up the Lua Language Server (`:LspInstall lua_ls`)
---       as this provides autocomplete and documentation while editing
+
+local recent_buffers = {}
+
+local function update_recent_buffers()
+  local current_buffer = vim.api.nvim_get_current_buf()
+
+  for i, buf in ipairs(recent_buffers) do
+    if buf == current_buffer then
+      table.remove(recent_buffers, i)
+      break
+    end
+  end
+  table.insert(recent_buffers, 1, current_buffer)
+  if #recent_buffers > 2 then table.remove(recent_buffers, 3) end
+end
+
+local function switch_to_recent_buffer()
+  if #recent_buffers < 2 then return end
+  local target_buffer = recent_buffers[2]
+  if vim.api.nvim_buf_is_valid(target_buffer) then vim.api.nvim_set_current_buf(target_buffer) end
+end
 
 ---@type LazySpec
 return {
@@ -22,21 +41,6 @@ return {
       virtual_text = true,
       underline = true,
     },
-    autocmds = {
-      fix_imports_on_save = {
-        cond = function(client) return client.name == "vtsls" end,
-        {
-          event = "BufWritePre",
-          desc = "Fix imports on save",
-          callback = function()
-            vim.lsp.buf.code_action {
-              context = { diagnostics = {}, only = { "source.organizeImports" } },
-              apply = true,
-            }
-          end,
-        },
-      },
-    },
 
     -- vim options can be configured here
     options = {
@@ -54,13 +58,8 @@ return {
         -- This can be found in the `lua/lazy_setup.lua` file
       },
     },
-    -- Mappings can be configured through AstroCore as well.
-    -- NOTE: keycodes follow the casing in the vimdocs. For example, `<Leader>` must be capitalized
     mappings = {
-      -- first key is the mode
       n = {
-        -- second key is the lefthand side of the map
-
         -- navigate buffer tabs
         ["]b"] = { function() require("astrocore.buffer").nav(vim.v.count1) end, desc = "Next buffer" },
         ["[b"] = { function() require("astrocore.buffer").nav(-vim.v.count1) end, desc = "Previous buffer" },
@@ -88,7 +87,7 @@ return {
         ["<Leader>o"] = { function() vim.cmd "Neotree focus buffers" end, desc = "Oppened buffers" },
 
         -- prev tab
-        ["<Tab>"] = { function() require("astrocore.buffer").prev() end, desc = "Previous buffer" },
+        ["<Leader><Tab>"] = { switch_to_recent_buffer, desc = "Previous buffer" },
 
         -- tables with just a `desc` key will be registered with which-key if it's installed
         -- this is useful for naming menus
@@ -103,10 +102,18 @@ return {
         ["<C-s>"] = { function() vim.lsp.buf.signature_help() end, desc = "Open signature modal" },
       },
       v = {
-
         -- move selected content
         ["J"] = { ":m '>+1<CR>gv=gv", desc = "move selected content to bottom" },
         ["K"] = { ":m '<-2<CR>gv=gv", desc = "move selected content to top" },
+      },
+    },
+    autocmds = {
+      updaterecentbuffers = {
+        {
+          event = "BufEnter",
+          group = "updaterecentbuffers",
+          callback = update_recent_buffers,
+        },
       },
     },
   },
